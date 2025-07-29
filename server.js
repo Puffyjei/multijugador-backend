@@ -13,8 +13,12 @@ let players = {};
 io.on("connection", socket => {
   console.log("Jugador conectado:", socket.id);
 
-  socket.on("newPlayer", () => {
-    players[socket.id] = { x: 100, y: 100 };
+  socket.on("newPlayer", data => {
+    players[socket.id] = {
+      x: 100,
+      y: 100,
+      name: data.name || "Anónimo"
+    };
     io.emit("updatePlayers", players);
   });
 
