@@ -30,6 +30,10 @@ io.on("connection", socket => {
     }
   });
 
+  socket.on("chatMessage", text => {
+    io.emit("chatMessage", { id: socket.id, text });
+  });
+
   socket.on("disconnect", () => {
     console.log("Jugador desconectado:", socket.id);
     delete players[socket.id];
