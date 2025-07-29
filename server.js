@@ -13,33 +13,67 @@ let players = {};
 io.on("connection", socket => {
   console.log("Jugador conectado:", socket.id);
 
-  socket.on("newPlayer", data => {
+  socket.on("newPlayer", name => {
     players[socket.id] = {
       x: 100,
       y: 100,
-      name: data.name || "Anónimo"
+      vy: 0,
+      name: name || "Anónimo",
+      keys: {}
     };
-    io.emit("updatePlayers", players);
+    socket.emit("init", socket.id);
   });
 
-  socket.on("playerMove", pos => {
+  socket.on("keys", keys => {
     if (players[socket.id]) {
-      players[socket.id].x = pos.x;
-      players[socket.id].y = pos.y;
-      io.emit("updatePlayers", players);
+      players[socket.id].keys = keys;
     }
   });
 
-  socket.on("chatMessage", text => {
-    io.emit("chatMessage", { id: socket.id, text });
+  socket.on("chat", text => {
+    const player = players[socket.id];
+    if (player) {
+      io.emit("chat", { name: player.name, msg: text });
+    }
   });
 
   socket.on("disconnect", () => {
     console.log("Jugador desconectado:", socket.id);
     delete players[socket.id];
-    io.emit("removePlayer", socket.id);
   });
 });
+
+setInterval(() => {
+  for (let id in players) {
+    const player = players[id];
+    const keys = player.keys || {};
+
+    // Movimiento horizontal mejorado
+    if (keys["ArrowLeft"]) player.x -= 7;
+    if (keys["ArrowRight"]) player.x += 7;
+
+    // Salto (si está en el suelo)
+    if (keys[" "] && player.vy === 0) {
+      player.vy = -14;
+    }
+
+    // Gravedad
+    player.vy += 1;
+    player.y += player.vy;
+
+    // Suelo
+    if (player.y >= 400) {
+      player.y = 400;
+      player.vy = 0;
+    }
+
+    // Límite del nivel
+    if (player.x < 0) player.x = 0;
+    if (player.x > 3000) player.x = 3000;
+  }
+
+  io.emit("state", players);
+}, 1000 / 60);
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
