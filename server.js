@@ -37,7 +37,7 @@ setInterval(() => {
     const keys = p.keys || {};
     if (keys["ArrowLeft"]) p.x -= 7;
     if (keys["ArrowRight"]) p.x += 7;
-    if (keys[" "] && p.vy === 0) p.vy = -14;
+    if (keys["ArrowUp"] && p.vy === 0) p.vy = -14;
     p.vy += 1;
     p.y += p.vy;
     if (p.y >= 400) { p.y = 400; p.vy = 0; }
