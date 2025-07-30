@@ -21,9 +21,7 @@ io.on("connection", socket => {
 
   socket.on("chat", msg => {
     const p = players[socket.id];
-    if (p) {
-      io.emit("chat", { name: p.name, msg });
-    }
+    if (p) io.emit("chat", { name: p.name, msg });
   });
 
   socket.on("disconnect", () => {
@@ -45,6 +43,6 @@ setInterval(() => {
     if (p.x > 3000) p.x = 3000;
   }
   io.emit("state", players);
-}, 1000/60);
+}, 1000 / 60);
 
-server.listen(process.env.PORT || 3000, () => console.log("Servidor listo"));
+server.listen(process.env.PORT || 3000, () => console.log("Tranqui listo"));
