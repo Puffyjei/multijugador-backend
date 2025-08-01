@@ -1,27 +1,65 @@
 const express = require("express");
-const http = require("http");
-const { Server } = require("socket.io");
-
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+const http = require("http").createServer(app);
+const io = require("socket.io")(http, {
+  cors: {
+    origin: "*"
+  }
+});
+
+const PORT = process.env.PORT || 3000;
+
+app.get("/", (req, res) => {
+  res.send("Servidor Creativo corriendo");
+});
 
 let players = {};
+let blocks = [];
 
 io.on("connection", socket => {
   console.log("Jugador conectado:", socket.id);
-  socket.on("newPlayer", username => {
-    players[socket.id] = { x: 100, y: 400, vy: 0, name: username };
+
+  socket.on("newPlayer", name => {
+    players[socket.id] = {
+      x: 100 + Math.random() * 100,
+      y: 100,
+      name,
+      mode: "creativo"
+    };
     socket.emit("init", socket.id);
+    io.emit("blocks", blocks);
   });
 
   socket.on("keys", keys => {
-    if (players[socket.id]) players[socket.id].keys = keys;
+    const p = players[socket.id];
+    if (!p) return;
+
+    const speed = 4;
+
+    if (keys["ArrowLeft"]) p.x -= speed;
+    if (keys["ArrowRight"]) p.x += speed;
+    if (keys["ArrowUp"]) p.y -= speed;
+    if (keys["ArrowDown"]) p.y += speed;
+
+    // Limitar posiciones si quieres
   });
 
   socket.on("chat", msg => {
     const p = players[socket.id];
-    if (p) io.emit("chat", { name: p.name, msg });
+    if (!p) return;
+    io.emit("chat", { name: p.name, msg });
+  });
+
+  socket.on("placeBlock", ({ x, y }) => {
+    blocks.push({ x: Math.floor(x / 40) * 40, y: Math.floor(y / 40) * 40 });
+    io.emit("blocks", blocks);
+  });
+
+  socket.on("removeBlock", ({ x, y }) => {
+    const bx = Math.floor(x / 40) * 40;
+    const by = Math.floor(y / 40) * 40;
+    blocks = blocks.filter(b => b.x !== bx || b.y !== by);
+    io.emit("blocks", blocks);
   });
 
   socket.on("disconnect", () => {
@@ -30,19 +68,9 @@ io.on("connection", socket => {
 });
 
 setInterval(() => {
-  for (let id in players) {
-    const p = players[id];
-    const keys = p.keys || {};
-    if (keys["ArrowLeft"]) p.x -= 7;
-    if (keys["ArrowRight"]) p.x += 7;
-    if (keys["ArrowUp"] && p.vy === 0) p.vy = -14; // luego aquí podrás volar
-    p.vy += 1;
-    p.y += p.vy;
-    if (p.y >= 400) { p.y = 400; p.vy = 0; }
-    if (p.x < 0) p.x = 0;
-    if (p.x > 3000) p.x = 3000;
-  }
   io.emit("state", players);
 }, 1000 / 60);
 
-server.listen(process.env.PORT || 3000, () => console.log("Creativo listo"));
+http.listen(PORT, () => {
+  console.log("Servidor Creativo escuchando en puerto", PORT);
+});
