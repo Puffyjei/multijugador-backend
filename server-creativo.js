@@ -6,7 +6,7 @@ const io = require("socket.io")(http, {
 });
 
 const players = {};
-const blocks = [];
+const blocks = []; // lista de bloques colocados
 
 io.on("connection", socket => {
   console.log("Jugador conectado:", socket.id);
@@ -16,8 +16,8 @@ io.on("connection", socket => {
       x: 100 + Math.random() * 100,
       y: 300,
       vy: 0,
-      grounded: false,
       name: name,
+      grounded: false,
     };
     socket.emit("init", socket.id);
   });
@@ -28,7 +28,7 @@ io.on("connection", socket => {
 
     if (keys["ArrowLeft"]) p.x -= 5;
     if (keys["ArrowRight"]) p.x += 5;
-    if (keys["ArrowUp"]) p.y -= 5;   // Vuelo en creativo
+    if (keys["ArrowUp"]) p.y -= 5;   // Vuela
     if (keys["ArrowDown"]) p.y += 5;
   });
 
@@ -46,10 +46,14 @@ io.on("connection", socket => {
   });
 });
 
+// Enviar estado a todos
 setInterval(() => {
-  io.emit("state", { players, blocks });
+  io.emit("state", {
+    players,
+    blocks
+  });
 }, 1000 / 60);
 
 http.listen(process.env.PORT || 3000, () => {
-  console.log("Servidor Modo Creativo funcionando");
+  console.log("Servidor creativo en marcha");
 });
